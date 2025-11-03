@@ -1,7 +1,7 @@
 import uuid
 
 from backend.api.db import get_course_db, get_pathway_db
-from backend.api.llm import get_query_builder
+from backend.api.llm import get_query_builder, agent
 from backend.api.models import (
     CompleteDegreePathway,
     DegreePathway,
@@ -37,6 +37,8 @@ class DegreePathwayPredictor:
         if len(course_names) != len(course_queries):
             print(f"WARNING: queries do not match courses length, courses {len(course_names)}, queries {len(course_queries)}")
 
+
+        all_courses_no_candidates = []
         i = 0
         for year in pathway.years:
             completed_semesters: list[dict] = []
@@ -50,6 +52,7 @@ class DegreePathwayPredictor:
 
                     if courses:
                         course = UHCoursePlan(**courses[0].model_dump(), candidates=courses)
+                        all_courses_no_candidates.append((courses[0].model_dump_json(indent=2)))
                     else:
                         course = self._build_placeholder_course(c)
 
@@ -73,6 +76,9 @@ class DegreePathwayPredictor:
         # Replace years with the completed structure
         base["years"] = completed_years
         base["candidates"] = [c.program_name for c in pathways]
+        summary = await agent.run(f"COURSES: {'\n'.join(all_courses_no_candidates)}\n\n\n\n explain in 8 sentences how these courses resonate well with this query. QUERY: '{query}' Your tone should be like you are speaking to the person who wrote the query. do not use em dashes. Do not start with a greeting. Just go to the summary straight away.")
+        base["summary"] = str(summary.output)
+
 
         # Re-validate as CompleteDegreePathway (this will build all nested models)
         return CompleteDegreePathway.model_validate(base)

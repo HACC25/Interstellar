@@ -95,6 +95,7 @@ class DegreePathwayBase(BaseModel, Generic[CourseT]):
 DegreePathway = DegreePathwayBase[PathwayCourse]
 
 class CompleteDegreePathway(DegreePathwayBase[UHCoursePlan]):
+    summary: str
     candidates: list[str]
 
 class DegreePathways(RootModel[List[DegreePathway]]):
