@@ -11,4 +11,5 @@ dependencies = [
     "pydantic-ai>=1.9.1",
     "pydantic-settings>=2.11.0",
     "uvicorn>=0.38.0",
+    "fpdf2>=2.7.8",
 ]
