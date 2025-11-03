@@ -1,5 +1,5 @@
 from backend.api.models import CourseQuery, PathwayCourse
-# from models import DegreePathways, UHCourses
+from models import DegreePathways, UHCourses, UHCourse
 #
 # with open("../data/manoa_degree_pathways_formatted.json", "r") as f:
 #     pathways_json = f.read()
@@ -8,11 +8,15 @@ from backend.api.models import CourseQuery, PathwayCourse
 # with open("../data/manoa_degree_pathways_formatted.json", "w") as f:
 #     f.write(pathways.model_dump_json(indent=2))
 
-# with open("../data/courses/manoa_formatted_3.json", "r") as f:
-#     courses_json = f.read()
-# courses = UHCourses.model_validate_json(courses_json)
+with open("../data/courses/manoa_formatted_3.json", "r") as f:
+    courses_json = f.read()
+courses = UHCourses.model_validate_json(courses_json)
 
-# print("\n".join(c.model_dump_json(indent=2) for c in courses.root if len(c.designations) > 1))
+
+def yes(course: UHCourse):
+    return len(course.subject_code) == 2
+
+print("\n".join(c.model_dump_json(indent=2) for c in courses.root if yes(c)))
 
 # print("\n".join(str(c.designations) + c.metadata for c in courses.root if c.designations and len(c.designations[0]) == 1))
 # with open("../data/courses/manoa_formatted_3.json", "w") as f:
@@ -31,6 +35,6 @@ course_db = get_course_db()
 #             count += 1
 # print(count)
 
-co = course_db.query(query="i like computers", pathway_course=PathwayCourse(name="ICS 300+", credits=4))
+# co = course_db.query(query="i like computers", pathway_course=PathwayCourse(name="ICS 300+", credits=4))
 # q = CourseQuery(subject_code='CINE', course_number=255, course_number_gte=None, course_suffix=None, designations=['DH'], query='i like computers', credits=3, k=10, n=1)
-print(*[c.model_dump_json(indent=2) for c in co])
+# print(*[c.model_dump_json(indent=2) for c in co])

@@ -8,5 +8,5 @@ from backend.api.llm import get_query_builder
 #     f.write(predictor.predict("hello").model_dump_json(indent=2))
 
 qb = get_query_builder()
-print("\n".join(q.model_dump_json(indent=2) for q in asyncio.run(qb.build_queries(["BIOL 171L or 172L (DY)"]))))
+print("\n".join(q.model_dump_json(indent=2) for q in asyncio.run(qb.build_queries(["DA/DH/DL 300+"]))))
 # print(str(["hi", "hello"]))
