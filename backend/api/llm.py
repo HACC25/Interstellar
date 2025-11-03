@@ -1,7 +1,7 @@
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
-
+from pydantic import RootModel, BaseModel
 from backend.api.models import CourseQueryBase
 from backend.api.settings import settings
 
@@ -22,8 +22,23 @@ usually the designations are in parens (DY), sometimes its more complicated like
 if its an elective that can be any course.
 designations are two or more letters long. this will help determine if its a designation vs a course_suffix.
 MEDT 331 (E, W) would search for 331 since at the moment search doesnt handle multiple course suffixes.
+
+
+you will be given a list of course names, return a list of queries.
 """, output_type=CourseQueryBase)
 
+class QueryBuilder:
+    def __init__(self):
+        self.agent = get_query_builder_agent()
+
+    async def build_queries(self, course_names: list[str]) -> list[CourseQueryBase]:
+        class Ret(BaseModel):
+            queries: list[CourseQueryBase]
+        ret = self.agent.run_sync(str(course_names), output_type=Ret).output
+        return ret.queries
 
 def get_query_builder_agent():
     return query_builder_agent
+
+def get_query_builder():
+    return QueryBuilder()
