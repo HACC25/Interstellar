@@ -1,6 +1,14 @@
+import uuid
+
 from backend.api.db import get_course_db, get_pathway_db
 from backend.api.llm import get_query_builder
-from backend.api.models import CompleteDegreePathway, DegreePathway, UHCoursePlan
+from backend.api.models import (
+    CompleteDegreePathway,
+    DegreePathway,
+    PathwayCourse,
+    UHCoursePlan,
+    CreditsRange,
+)
 
 class DegreePathwayPredictor:
     def __init__(self):
@@ -26,6 +34,9 @@ class DegreePathwayPredictor:
 
         course_queries = await self._query_builder.build_queries(course_names)
 
+        if len(course_names) != len(course_queries):
+            print("WARNING: queries do not match courses length")
+
         i = 0
         for year in pathway.years:
             completed_semesters: list[dict] = []
@@ -37,7 +48,10 @@ class DegreePathwayPredictor:
                     courses = self._course_db.query(text=query, query=course_queries[i], pathway_course=c)
                     i += 1
 
-                    course = UHCoursePlan(**courses[0].model_dump(), candidates=courses)
+                    if courses:
+                        course = UHCoursePlan(**courses[0].model_dump(), candidates=courses)
+                    else:
+                        course = self._build_placeholder_course(c)
 
                     completed_courses.append(course.model_dump())
 
@@ -62,6 +76,24 @@ class DegreePathwayPredictor:
 
         # Re-validate as CompleteDegreePathway (this will build all nested models)
         return CompleteDegreePathway.model_validate(base)
+
+    def _build_placeholder_course(self, pathway_course: PathwayCourse) -> UHCoursePlan:
+        """Fallback when no matching UH course is found."""
+        credits = pathway_course.credits
+        return UHCoursePlan(
+            course_id=str(uuid.uuid4()),
+            subject_code="TBD",
+            course_number=0,
+            course_suffix=None,
+            course_title=f"{pathway_course.name} (no match found)",
+            course_desc="No matching UH course was found for this requirement.",
+            num_units=CreditsRange(min=credits, max=credits),
+            dept_name="Unknown",
+            inst_ipeds=0,
+            metadata="",
+            designations=[],
+            candidates=[],
+        )
 
 def get_degree_pathway_predictor():
     return DegreePathwayPredictor()
