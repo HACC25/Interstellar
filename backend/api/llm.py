@@ -23,6 +23,7 @@ usually the designations are in parens (DY), sometimes its more complicated like
 if its an elective that can be any course.
 designations are two or more letters long. this will help determine if its a designation vs a course_suffix.
 MEDT 331 (E, W) would search for 331 since at the moment search doesnt handle multiple course suffixes.
+notes: HSL is a designation, not a subject_code
 If you encounter a course name like "BIOL 171L or 172L (DY)" just choose the first one. the output list should have exactly the same number of elements as the input list.
 
 you will be given a list of course names, return a list of queries. the queries must be in the same order as the input list.

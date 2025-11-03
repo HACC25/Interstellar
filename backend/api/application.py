@@ -35,7 +35,7 @@ class DegreePathwayPredictor:
         course_queries = await self._query_builder.build_queries(course_names)
 
         if len(course_names) != len(course_queries):
-            print("WARNING: queries do not match courses length")
+            print(f"WARNING: queries do not match courses length, courses {len(course_names)}, queries {len(course_queries)}")
 
         i = 0
         for year in pathway.years:
