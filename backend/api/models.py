@@ -1,7 +1,7 @@
 from typing import List, Literal
-from pydantic import BaseModel, Field, ConfigDict, RootModel, model_validator
+from pydantic import BaseModel, Field, ConfigDict, RootModel, model_validator, field_validator
 import uuid
-
+import re
 
 # -----------------------------
 # Credits range
@@ -29,12 +29,16 @@ class CreditsRange(BaseModel):
     min: float
     max: float
 
-class UHCourse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+import uuid
+import re
+from typing import Optional
 
+class UHCourse(BaseModel):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
     course_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    course_prefix: str
-    course_number: str
+    subject_code: str = Field(alias="course_prefix")
+    course_number: int
+    course_suffix: Optional[str] = None
     course_title: str
     course_desc: str
     num_units: CreditsRange
