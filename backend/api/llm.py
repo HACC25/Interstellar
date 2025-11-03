@@ -4,6 +4,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic import RootModel, BaseModel
 from backend.api.models import CourseQueryBase
 from backend.api.settings import settings
+import asyncio
 
 model = OpenAIChatModel(model_name=settings.openai_llm, provider=OpenAIProvider(api_key=settings.openai_api_key))
 agent = Agent(model)
@@ -27,15 +28,37 @@ MEDT 331 (E, W) would search for 331 since at the moment search doesnt handle mu
 you will be given a list of course names, return a list of queries.
 """, output_type=CourseQueryBase)
 
+def chunked(seq: list[str], size: int) -> list[list[str]]:
+    return [seq[i:i + size] for i in range(0, len(seq), size)]
+
 class QueryBuilder:
     def __init__(self):
         self.agent = get_query_builder_agent()
 
-    async def build_queries(self, course_names: list[str]) -> list[CourseQueryBase]:
+    async def build_queries(
+            self,
+            course_names: list[str],
+            batch_size: int = 5,
+    ) -> list[CourseQueryBase]:
         class Ret(BaseModel):
             queries: list[CourseQueryBase]
-        ret = self.agent.run_sync(str(course_names), output_type=Ret).output
-        return ret.queries
+
+        async def process_batch(batch: list[str]) -> list[CourseQueryBase]:
+            # single agent call per batch
+            result = await self.agent.run(str(batch), output_type=Ret)
+            return result.output.queries
+
+        # create a task per batch
+        tasks = [
+            asyncio.create_task(process_batch(batch))
+            for batch in chunked(course_names, batch_size)
+        ]
+
+        # run all batches concurrently
+        batches_results: list[list[CourseQueryBase]] = await asyncio.gather(*tasks)
+
+        # flatten [[...], [...]] -> [...]
+        return [q for batch in batches_results for q in batch]
 
 def get_query_builder_agent():
     return query_builder_agent

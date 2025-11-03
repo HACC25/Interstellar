@@ -8,7 +8,7 @@ from backend.api.llm import get_query_builder_agent
 from backend.api.models import UHCourse, PathwayCourse, CourseQuery, CourseQueryBase
 from backend.api.settings import settings
 
-from models import DegreePathway
+from backend.api.models import DegreePathway
 
 _db = lancedb.connect(settings.lancedb_storage_path)
 _func = get_registry().get("openai").create()

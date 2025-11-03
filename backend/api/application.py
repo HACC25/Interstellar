@@ -1,4 +1,5 @@
 from backend.api.db import get_course_db, get_pathway_db
+from backend.api.llm import get_query_builder
 from backend.api.models import CompleteDegreePathway, DegreePathway, UHCoursePlan, DegreePathways
 
 
@@ -6,6 +7,7 @@ class DegreePathwayPredictor:
     def __init__(self):
         self._course_db = get_course_db()
         self._pathway_db = get_pathway_db()
+        self._query_builder = get_query_builder()
 
     def predict(self, query: str) -> CompleteDegreePathway:
         pathways = self._pathway_db.get_similar_pathways(query=query)
@@ -17,6 +19,15 @@ class DegreePathwayPredictor:
 
         completed_years: list[dict] = []
 
+        course_names: list[str] = []
+        for y in pathway.years:
+            for s in y.semesters:
+                for c in s.courses:
+                    course_names.append(c.name)
+
+        course_queries = self._query_builder.build_queries(course_names)
+
+        i = 0
         for year in pathway.years:
             completed_semesters: list[dict] = []
 
@@ -24,7 +35,8 @@ class DegreePathwayPredictor:
                 completed_courses: list[dict] = []
 
                 for c in sem.courses:
-                    courses = self._course_db.query(query=query, pathway_course=c)
+                    courses = self._course_db.query(query=course_queries[i], pathway_course=c)
+                    i += 1
                     course = UHCoursePlan(**courses[0].model_dump(), candidates=courses)
                     completed_courses.append(course.model_dump())
 
