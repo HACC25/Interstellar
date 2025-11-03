@@ -51,39 +51,65 @@ class UHCourses(RootModel[List[UHCourse]]):
     pass
 
 
+class UHCoursePlan(UHCourse):
+    candidates: list[UHCourse] = []
+
 # -----------------------------
 # Mānoa degree pathways
 # -----------------------------
 
 SemesterName = Literal["fall", "spring", "summer"]
 
-class PathwayCourse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+from typing import List, Generic, TypeVar
+from pydantic import BaseModel, Field, ConfigDict
+import uuid
 
+CourseT = TypeVar("CourseT", bound=BaseModel)
+
+class PathwayCourse(BaseModel):
     name: str
     credits: int = Field(ge=0)
 
-class SemesterPlan(BaseModel):
+class SemesterPlan(BaseModel, Generic[CourseT]):
     model_config = ConfigDict(extra="forbid")
 
     semester_name: SemesterName
     credits: int = Field(ge=0)
-    courses: List[PathwayCourse]
+    courses: List[CourseT]
 
-class YearPlan(BaseModel):
-    model_config = ConfigDict(extra="forbid")
 
+class YearPlan(BaseModel, Generic[CourseT]):
     year_number: int
-    semesters: List[SemesterPlan]
+    semesters: List[SemesterPlan[CourseT]]
 
-class DegreePathway(BaseModel):
+
+class DegreePathwayBase(BaseModel, Generic[CourseT]):
     model_config = ConfigDict(extra="forbid")
-    pathway_id: str = Field(default_factory=lambda : str(uuid.uuid4()))
+
+    pathway_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     program_name: str
-    institution: Literal["Manoa"] = "Manoa"
+    institution: str
     total_credits: int = Field(ge=0)
-    years: List[YearPlan]
+    years: List[YearPlan[CourseT]]
+
+DegreePathway = DegreePathwayBase[PathwayCourse]
+
+class CompleteDegreePathway(DegreePathwayBase[UHCoursePlan]):
+    candidates: list[str]
 
 class DegreePathways(RootModel[List[DegreePathway]]):
     pass
+
+class CourseQueryBase(BaseModel):
+    subject_code: str | None = None
+    course_number: int | None = None
+    course_number_gte: int | None = None
+    course_suffix: str | None = None
+    designations: list[str] | None = None
+
+class CourseQuery(CourseQueryBase):
+    query: str | None = None
+    credits: int | None = None
+    k: int | None = None
+    n: int | None = None
 

@@ -4,7 +4,8 @@ import lancedb
 from lancedb.embeddings import get_registry, EmbeddingFunction
 from lancedb import DBConnection
 
-from backend.api.models import UHCourse
+from backend.api.llm import get_query_builder_agent
+from backend.api.models import UHCourse, PathwayCourse, CourseQuery, CourseQueryBase
 from backend.api.settings import settings
 
 from models import DegreePathway
@@ -28,7 +29,7 @@ class PathwayVectorDb:
 
     def get_similar_pathways(self, query: str) -> list[DegreePathway]:
         table = self.db.open_table("pathways")
-        results = table.search(query).limit(3).to_pydantic(DegreePathwayLance)
+        results = table.search(query).limit(8).to_pydantic(DegreePathwayLance)
         return [DegreePathway.model_validate_json(r.text) for r in results]
 
 def get_pathway_db() -> PathwayVectorDb:
@@ -53,65 +54,58 @@ class CourseVectorDb:
             self.db.create_table("courses", schema=UHCourseLance)
             print("Created Course Vector DB")
 
-    def get_similar_courses(
-            self,
-            query: str,
-            *,
-            course_credits: Optional[float] = None,
-            course_prefix: Optional[str] = None,
-            course_number: Optional[int] = None,
-            designation: Optional[list[str]] = None,
-            limit: int = 10,
-    ) -> list[UHCourse]:
-        """
-        Vector search by `query` (required) with optional structured filters.
+    def query(self, query: str, pathway_course: PathwayCourse, k: int = 10, n: int = 1):
+        return self.get_similar_courses(query=CourseQuery(course_number_gte=100, k=k, n=n))
 
-        Args:
-            query: Free-text semantic query (required).
-            course_credits: If provided, matches courses whose [min, max] credit range covers this number.
-            course_prefix: Exact match on course_prefix (e.g., "ICS").
-            course_number: Exact match on course_number (e.g., "111").
-            designation: Extra keywords to *bias* the embedding (e.g., ["ethics", "writing intensive"]).
-            limit: Max results to return (default: 10).
+        agent = get_query_builder_agent()
+        query_base: CourseQueryBase = agent.run_sync(pathway_course.name).output
 
-        Returns:
-            A list[UHCourse] ranked by vector similarity, pre-filtered if filters are supplied.
-        """
+        query = CourseQuery(
+            subject_code=query_base.subject_code,
+            course_number=query_base.course_number,
+            course_number_gte=query_base.course_number_gte,
+            course_suffix=query_base.course_suffix,
+            designations=query_base.designations,
+            query=query,
+            credits=pathway_course.credits,
+            k=k,
+            n=n,
+        )
+        # print(query)
+        # print(query.model_dump_json(indent=2))
+
+        return self.get_similar_courses(query=query)
+
+    def get_similar_courses(self, query: CourseQuery) -> list[UHCourse]:
         table = self.db.open_table("courses")
+        q = None
 
-        # Enrich the semantic query with any designation keywords to steer the embedding.
-        enriched_query = " ".join([query, *designation]) if designation else query
+        if query.query:
+            q = table.search(query.query, query_type="vector")
+        else:
+            q = table.search()
 
-        q = table.search(enriched_query, query_type="vector")
+        wheres: list[str] = []
+        if query.credits:
+            wheres.append(f"num_units.min <= {query.credits} AND num_units.max >= {query.credits}")
+        if query.subject_code:
+            wheres.append(f"subject_code = '{query.subject_code}'")
+        if query.course_number:
+            wheres.append(f"course_number = {query.course_number}")
+        if query.course_number_gte:
+            wheres.append(f"course_number >= {query.course_number_gte}")
+        if query.course_suffix:
+            wheres.append(f"course_suffix = '{query.course_suffix}'")
+        if query.designations:
+            lits = ", ".join(f"'{s}'" for s in query.designations)
+            wheres.append(f"array_has_any(designations, [{lits}])")
+        where_clause = " AND ".join(wheres)
+        q = q.where(where_clause)
 
-        # Build optional WHERE filters
-        where_clauses: list[str] = []
+        k = query.k or 10
+        results = q.limit(k).to_pydantic(UHCourseLance)
 
-        def esc(val: str) -> str:
-            # naive SQL-literal escape for single quotes in string filters
-            return val.replace("'", "''").strip()
-
-        if course_prefix:
-            where_clauses.append(f"course_prefix = '{esc(course_prefix)}'")
-        if course_number:
-            where_clauses.append(f"course_number = {course_number}")
-        if course_credits is not None:
-            # Match any course whose normalized range [min, max] includes the given credit value.
-            c = float(course_credits)
-            where_clauses.append(f"num_units.min <= {c} AND num_units.max >= {c}")
-
-        if where_clauses:
-            q = q.where(" AND ".join(where_clauses))
-
-        # Try vector search first
-        results = q.limit(limit).to_pydantic(UHCourseLance)
-
-        # Fallback: if nothing found via vector search, try text search (helps when the vector index is cold/empty)
-        if not results:
-            results = table.search(enriched_query).limit(limit).to_pydantic(UHCourseLance)
-
-        # Reconstruct clean UHCourse objects from the stored JSON payload
-        return [UHCourse.model_validate_json(r.text) for r in results]
+        return [UHCourse.model_validate_json(r.model_dump_json(), extra="ignore") for r in results]
 
     def clear(self):
         self.db.drop_table("courses")
