@@ -25,7 +25,7 @@ designations are two or more letters long. this will help determine if its a des
 MEDT 331 (E, W) would search for 331 since at the moment search doesnt handle multiple course suffixes.
 
 
-you will be given a list of course names, return a list of queries.
+you will be given a list of course names, return a list of queries. the queries must be in the same order as the input list.
 """, output_type=CourseQueryBase)
 
 def chunked(seq: list[str], size: int) -> list[list[str]]:

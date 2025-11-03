@@ -38,6 +38,7 @@ class DegreePathwayPredictor:
                     courses = self._course_db.query(query=course_queries[i], pathway_course=c)
                     i += 1
                     course = UHCoursePlan(**courses[0].model_dump(), candidates=courses)
+                    print(course.model_dump_json(indent=2))
                     completed_courses.append(course.model_dump())
 
                 completed_semesters.append(
