@@ -54,11 +54,11 @@ class CourseVectorDb:
             self.db.create_table("courses", schema=UHCourseLance)
             print("Created Course Vector DB")
 
-    def query(self, query: str, pathway_course: PathwayCourse, k: int = 10, n: int = 1):
-        return self.get_similar_courses(query=CourseQuery(course_number_gte=100, k=k, n=n))
+    def query(self, text: str, query: CourseQueryBase, pathway_course: PathwayCourse, k: int = 10, n: int = 1):
+        # return self.get_similar_courses(query=CourseQuery(course_number_gte=100, k=k, n=n))
 
-        agent = get_query_builder_agent()
-        query_base: CourseQueryBase = agent.run_sync(pathway_course.name).output
+        # agent = get_query_builder_agent()
+        query_base: CourseQueryBase = query
 
         query = CourseQuery(
             subject_code=query_base.subject_code,
@@ -66,7 +66,7 @@ class CourseVectorDb:
             course_number_gte=query_base.course_number_gte,
             course_suffix=query_base.course_suffix,
             designations=query_base.designations,
-            query=query,
+            query=text,
             credits=pathway_course.credits,
             k=k,
             n=n,

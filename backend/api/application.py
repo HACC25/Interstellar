@@ -1,7 +1,6 @@
 from backend.api.db import get_course_db, get_pathway_db
 from backend.api.llm import get_query_builder
-from backend.api.models import CompleteDegreePathway, DegreePathway, UHCoursePlan, DegreePathways
-
+from backend.api.models import CompleteDegreePathway, DegreePathway, UHCoursePlan
 
 class DegreePathwayPredictor:
     def __init__(self):
@@ -35,10 +34,11 @@ class DegreePathwayPredictor:
                 completed_courses: list[dict] = []
 
                 for c in sem.courses:
-                    courses = self._course_db.query(query=course_queries[i], pathway_course=c)
+                    courses = self._course_db.query(text=query, query=course_queries[i], pathway_course=c)
                     i += 1
+
                     course = UHCoursePlan(**courses[0].model_dump(), candidates=courses)
-                    print(course.model_dump_json(indent=2))
+
                     completed_courses.append(course.model_dump())
 
                 completed_semesters.append(
