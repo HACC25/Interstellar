@@ -1,6 +1,6 @@
 from datetime import datetime
 from io import BytesIO
-
+import unicodedata
 from textwrap import fill
 
 from fpdf import FPDF
@@ -14,7 +14,6 @@ ACCENT_BLUE = (37, 99, 235)
 TEXT_PRIMARY = (15, 23, 42)
 TEXT_SECONDARY = (71, 85, 105)
 TEXT_MUTED = (100, 116, 139)
-TEXT_LIGHT = (148, 163, 184)
 
 
 class PathwayPDF(FPDF):
@@ -38,27 +37,49 @@ class PathwayPDF(FPDF):
         self.cell(0, 10, f"Page {self.page_no()}", align="R")
 
 
-def _add_semester(pdf: PathwayPDF, semester_name: str, credits: int) -> None:
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.set_text_color(*SECONDARY_BLUE)
-    pdf.cell(0, 8, f"{semester_name.title()} · {credits} credits", ln=True)
-    pdf.ln(2)
+def _sanitize_text(text: str) -> str:
+    if not text:
+        return ""
+
+    replacements = {
+        "ʻ": "'",
+        "’": "'",
+        "‘": "'",
+        "–": "-",
+        "—": "-",
+        "·": "-",
+        "•": "-",
+        "…": "...",
+    }
+    for original, replacement in replacements.items():
+        text = text.replace(original, replacement)
+
+    normalized = unicodedata.normalize("NFKD", text)
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return ascii_text
 
 
 def _line_breaks(text: str, width: int = 90) -> str:
     """Ensure long tokens wrap nicely inside PDF columns."""
-    if not text:
-        return text
+    cleaned = _sanitize_text(text)
+    if not cleaned:
+        return ""
 
-    # Replace hard returns with wrapped lines to avoid excessively wide words.
     wrapped_lines = []
-    for raw_line in text.splitlines():
+    for raw_line in cleaned.splitlines():
         stripped = raw_line.strip()
         if not stripped:
-            wrapped_lines.append('')
+            wrapped_lines.append("")
             continue
         wrapped_lines.append(fill(stripped, width=width))
     return "\n".join(wrapped_lines)
+
+
+def _add_semester(pdf: PathwayPDF, semester_name: str, credits: int) -> None:
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_text_color(*SECONDARY_BLUE)
+    pdf.cell(0, 8, _sanitize_text(f"{semester_name.title()} - {credits} credits"), ln=True)
+    pdf.ln(2)
 
 
 def _add_course(pdf: PathwayPDF, course: UHCourse | UHCoursePlan) -> None:
@@ -75,7 +96,7 @@ def _add_course(pdf: PathwayPDF, course: UHCourse | UHCoursePlan) -> None:
 
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(*TEXT_PRIMARY)
-    pdf.cell(0, 6, f"{code} · {course.course_title}", ln=True)
+    pdf.cell(0, 6, _sanitize_text(f"{code} - {course.course_title}"), ln=True)
 
     pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(*TEXT_SECONDARY)
@@ -91,7 +112,7 @@ def _add_course(pdf: PathwayPDF, course: UHCourse | UHCoursePlan) -> None:
     if course.designations:
         meta_parts.append("Designations: " + ", ".join(course.designations))
     pdf.set_x(pdf.l_margin)
-    pdf.multi_cell(0, 4, " · ".join(meta_parts))
+    pdf.multi_cell(0, 4, _sanitize_text(" - ".join(meta_parts)))
     pdf.ln(2)
 
     if isinstance(course, UHCoursePlan) and course.candidates:
@@ -105,7 +126,11 @@ def _add_course(pdf: PathwayPDF, course: UHCourse | UHCoursePlan) -> None:
             if candidate.course_suffix:
                 candidate_code = f"{candidate_code} {candidate.course_suffix}"
             pdf.set_x(pdf.l_margin)
-            pdf.multi_cell(0, 4, f"- {candidate_code} · {_line_breaks(candidate.course_title, 80)}")
+            pdf.multi_cell(
+                0,
+                4,
+                _sanitize_text(f"- {candidate_code} - {candidate.course_title}"),
+            )
         pdf.ln(1)
 
 
@@ -121,7 +146,12 @@ def build_pathway_pdf(plan: CompleteDegreePathway) -> bytes:
     pdf.multi_cell(0, 8, _line_breaks(plan.program_name))
     pdf.set_font("Helvetica", "", 11)
     pdf.set_text_color(*TEXT_SECONDARY)
-    pdf.cell(0, 6, f"{plan.institution} · {plan.total_credits} credits total", ln=True)
+    pdf.cell(
+        0,
+        6,
+        _sanitize_text(f"{plan.institution} - {plan.total_credits} credits total"),
+        ln=True,
+    )
     pdf.ln(5)
 
     if plan.candidates:
@@ -132,13 +162,13 @@ def build_pathway_pdf(plan: CompleteDegreePathway) -> bytes:
         pdf.set_text_color(*TEXT_SECONDARY)
         for candidate in plan.candidates:
             pdf.set_x(pdf.l_margin)
-            pdf.multi_cell(0, 5, f"- {_line_breaks(candidate, 80)}")
+            pdf.multi_cell(0, 5, _sanitize_text(f"- {candidate}"))
         pdf.ln(4)
 
     for year in plan.years:
         pdf.set_font("Helvetica", "B", 13)
         pdf.set_text_color(*PRIMARY_BLUE)
-        pdf.cell(0, 7, f"Year {year.year_number}", ln=True)
+        pdf.cell(0, 7, _sanitize_text(f"Year {year.year_number}"), ln=True)
         pdf.ln(1)
 
         for semester in year.semesters:
