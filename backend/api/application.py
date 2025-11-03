@@ -9,11 +9,11 @@ class DegreePathwayPredictor:
         self._pathway_db = get_pathway_db()
         self._query_builder = get_query_builder()
 
-    def predict(self, query: str) -> CompleteDegreePathway:
+    async def predict(self, query: str) -> CompleteDegreePathway:
         pathways = self._pathway_db.get_similar_pathways(query=query)
-        return self._complete_pathway(query, pathways)
+        return await self._complete_pathway(query, pathways)
 
-    def _complete_pathway(self, query: str, pathways: list[DegreePathway]) -> CompleteDegreePathway:
+    async def _complete_pathway(self, query: str, pathways: list[DegreePathway]) -> CompleteDegreePathway:
         pathway = pathways[0]
         base = pathway.model_dump()
 
@@ -25,7 +25,7 @@ class DegreePathwayPredictor:
                 for c in s.courses:
                     course_names.append(c.name)
 
-        course_queries = self._query_builder.build_queries(course_names)
+        course_queries = await self._query_builder.build_queries(course_names)
 
         i = 0
         for year in pathway.years:
