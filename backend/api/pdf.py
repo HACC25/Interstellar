@@ -154,6 +154,15 @@ def build_pathway_pdf(plan: CompleteDegreePathway) -> bytes:
     )
     pdf.ln(5)
 
+    if plan.summary:
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.set_text_color(*ACCENT_BLUE)
+        pdf.cell(0, 6, "Plan Summary", ln=True)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(*TEXT_SECONDARY)
+        pdf.multi_cell(0, 5, _line_breaks(plan.summary))
+        pdf.ln(4)
+
     if plan.candidates:
         pdf.set_font("Helvetica", "B", 11)
         pdf.set_text_color(*ACCENT_BLUE)

@@ -1,10 +1,7 @@
-from typing import Optional
-
 import lancedb
 from lancedb.embeddings import get_registry, EmbeddingFunction
 from lancedb import DBConnection
 
-from backend.api.llm import get_query_builder_agent
 from backend.api.models import UHCourse, PathwayCourse, CourseQuery, CourseQueryBase
 from backend.api.settings import settings
 
@@ -13,7 +10,6 @@ from backend.api.models import DegreePathway
 _db = lancedb.connect(settings.lancedb_storage_path)
 _func = get_registry().get("openai").create()
 
-# print(_func.generate_embeddings(["hello"]))
 
 from lancedb.pydantic import LanceModel, Vector
 
