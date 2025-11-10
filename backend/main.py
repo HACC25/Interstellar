@@ -61,6 +61,17 @@ async def pathway_similarity_search(
     return pathway_db.get_similar_pathways(query=query, limit=limit)
 
 
+@app.get("/pathways/{pathway_id}", response_model=DegreePathway)
+async def get_pathway_by_id(
+    pathway_id: str,
+    pathway_db: PathwayVectorDb = Depends(get_pathway_db),
+) -> DegreePathway:
+    pathway = pathway_db.get_pathway(pathway_id)
+    if pathway is None:
+        raise HTTPException(status_code=404, detail="Pathway not found")
+    return pathway
+
+
 def _export_filename(program_name: str) -> str:
     slug = re.sub(r"[^a-zA-Z0-9]+", "-", program_name or "").strip("-").lower()
     if not slug:
