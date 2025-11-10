@@ -24,9 +24,27 @@ class PathwayVectorDb:
         self.db = db
         self.func = func
 
-    def get_similar_pathways(self, query: str) -> list[DegreePathway]:
+    def get_similar_pathways(self, query: str, limit: int = 8) -> list[DegreePathway]:
         table = self.db.open_table("pathways")
-        results = table.search(query).limit(8).to_pydantic(DegreePathwayLance)
+        results = table.search(query).limit(limit).to_pydantic(DegreePathwayLance)
+        return [DegreePathway.model_validate_json(r.text) for r in results]
+
+    @staticmethod
+    def _escape_like(value: str) -> str:
+        """Escape single quotes for use inside a LIKE clause."""
+        return value.replace("'", "''")
+
+    def text_search(self, query: str, limit: int = 8) -> list[DegreePathway]:
+        """Run a simple SQL LIKE query against the serialized pathway text."""
+        table = self.db.open_table("pathways")
+        escaped = self._escape_like(query)
+        where_clause = f"text LIKE '%{escaped}%'"
+        results = (
+            table.search()
+            .where(where_clause)
+            .limit(limit)
+            .to_pydantic(DegreePathwayLance)
+        )
         return [DegreePathway.model_validate_json(r.text) for r in results]
 
     def get_pathway(self, pathway_id: str) -> Optional[DegreePathway]:

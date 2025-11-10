@@ -4,7 +4,8 @@ from fastapi import Body, Depends, FastAPI, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.application import DegreePathwayPredictor, get_degree_pathway_predictor
-from backend.api.models import CompleteDegreePathway
+from backend.api.db import PathwayVectorDb, get_pathway_db
+from backend.api.models import CompleteDegreePathway, DegreePathway
 from backend.api.pdf import build_pathway_pdf
 
 app = FastAPI()
@@ -36,6 +37,28 @@ async def predict_degree_pathway_by_id(
         return await predictor.predict_by_pathway_id(pathway_id=pathway_id, query=query)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+
+
+@app.get("/pathways/text-search", response_model=list[DegreePathway])
+async def pathway_text_search(
+    query: str,
+    limit: int = 8,
+    pathway_db: PathwayVectorDb = Depends(get_pathway_db),
+) -> list[DegreePathway]:
+    if not query.strip():
+        raise HTTPException(status_code=400, detail="Query must not be empty")
+    return pathway_db.text_search(query=query, limit=limit)
+
+
+@app.get("/pathways/similar", response_model=list[DegreePathway])
+async def pathway_similarity_search(
+    query: str,
+    limit: int = 8,
+    pathway_db: PathwayVectorDb = Depends(get_pathway_db),
+) -> list[DegreePathway]:
+    if not query.strip():
+        raise HTTPException(status_code=400, detail="Query must not be empty")
+    return pathway_db.get_similar_pathways(query=query, limit=limit)
 
 
 def _export_filename(program_name: str) -> str:
