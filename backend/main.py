@@ -1,6 +1,6 @@
 import re
 
-from fastapi import Body, Depends, FastAPI, Response
+from fastapi import Body, Depends, FastAPI, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.application import DegreePathwayPredictor, get_degree_pathway_predictor
@@ -24,6 +24,18 @@ async def predict_degree_pathway(
     predictor: DegreePathwayPredictor = Depends(get_degree_pathway_predictor),
 ) -> CompleteDegreePathway:
     return await predictor.predict(query)
+
+
+@app.post("/predict/{pathway_id}", response_model=CompleteDegreePathway)
+async def predict_degree_pathway_by_id(
+    pathway_id: str,
+    query: str = Body(...),
+    predictor: DegreePathwayPredictor = Depends(get_degree_pathway_predictor),
+) -> CompleteDegreePathway:
+    try:
+        return await predictor.predict_by_pathway_id(pathway_id=pathway_id, query=query)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
 
 
 def _export_filename(program_name: str) -> str:

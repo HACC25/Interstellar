@@ -1,6 +1,7 @@
 import lancedb
 from lancedb.embeddings import get_registry, EmbeddingFunction
 from lancedb import DBConnection
+from typing import Optional
 
 from backend.api.models import UHCourse, PathwayCourse, CourseQuery, CourseQueryBase
 from backend.api.settings import settings
@@ -27,6 +28,18 @@ class PathwayVectorDb:
         table = self.db.open_table("pathways")
         results = table.search(query).limit(8).to_pydantic(DegreePathwayLance)
         return [DegreePathway.model_validate_json(r.text) for r in results]
+
+    def get_pathway(self, pathway_id: str) -> Optional[DegreePathway]:
+        table = self.db.open_table("pathways")
+        results = (
+            table.search()
+            .where(f"pathway_id = '{pathway_id}'")
+            .limit(1)
+            .to_pydantic(DegreePathwayLance)
+        )
+        if not results:
+            return None
+        return DegreePathway.model_validate_json(results[0].text)
 
 def get_pathway_db() -> PathwayVectorDb:
     return PathwayVectorDb(_db, _func)

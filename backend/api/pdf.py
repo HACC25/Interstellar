@@ -171,7 +171,7 @@ def build_pathway_pdf(plan: CompleteDegreePathway) -> bytes:
         pdf.set_text_color(*TEXT_SECONDARY)
         for candidate in plan.candidates:
             pdf.set_x(pdf.l_margin)
-            pdf.multi_cell(0, 5, _sanitize_text(f"- {candidate}"))
+            pdf.multi_cell(0, 5, _sanitize_text(f"- {candidate.name}"))
         pdf.ln(4)
 
     for year in plan.years:

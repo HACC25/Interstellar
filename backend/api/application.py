@@ -20,6 +20,17 @@ class DegreePathwayPredictor:
         pathways = self._pathway_db.get_similar_pathways(query=query)
         return await self._complete_pathway(query, pathways)
 
+    async def predict_by_pathway_id(self, pathway_id: str, query: str) -> CompleteDegreePathway:
+        pathway = self._pathway_db.get_pathway(pathway_id)
+        if pathway is None:
+            raise ValueError(f"Pathway '{pathway_id}' not found")
+
+        similar = self._pathway_db.get_similar_pathways(query=query)
+        combined_pathways: list[DegreePathway] = [pathway]
+        combined_pathways.extend(p for p in similar if p.pathway_id != pathway.pathway_id)
+
+        return await self._complete_pathway(query, combined_pathways)
+
     async def _complete_pathway(self, query: str, pathways: list[DegreePathway]) -> CompleteDegreePathway:
         pathway = pathways[0]
         base = pathway.model_dump()
@@ -75,7 +86,13 @@ class DegreePathwayPredictor:
 
         # Replace years with the completed structure
         base["years"] = completed_years
-        base["candidates"] = [c.program_name for c in pathways]
+        base["candidates"] = [
+            {
+                "name": c.program_name,
+                "pathway_id": c.pathway_id,
+            }
+            for c in pathways
+        ]
         summary = await agent.run(f"COURSES: {'\n'.join(all_courses_no_candidates)}\n\n\n\n explain in 8 sentences how these courses resonate well with this query. QUERY: '{query}' Your tone should be like you are speaking to the person who wrote the query. do not use em dashes. Do not start with a greeting. Just go to the summary straight away.")
         base["summary"] = str(summary.output)
 

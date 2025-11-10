@@ -94,9 +94,14 @@ class DegreePathwayBase(BaseModel, Generic[CourseT]):
 
 DegreePathway = DegreePathwayBase[PathwayCourse]
 
+class DegreePathwayCandidate(BaseModel):
+    name: str
+    pathway_id: str
+
+
 class CompleteDegreePathway(DegreePathwayBase[UHCoursePlan]):
     summary: str
-    candidates: list[str]
+    candidates: list[DegreePathwayCandidate]
 
 class DegreePathways(RootModel[List[DegreePathway]]):
     pass
@@ -113,4 +118,3 @@ class CourseQuery(CourseQueryBase):
     credits: int | None = None
     k: int | None = None
     n: int | None = None
-
