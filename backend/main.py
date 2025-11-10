@@ -1,12 +1,13 @@
 import re
 
-from fastapi import Body, Depends, FastAPI, Response, HTTPException
+from fastapi import Body, Depends, FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.application import DegreePathwayPredictor, get_degree_pathway_predictor
 from backend.api.db import PathwayVectorDb, get_pathway_db
 from backend.api.models import CompleteDegreePathway, DegreePathway
 from backend.api.pdf import build_pathway_pdf
+from backend.parse import FileParser, get_file_parser
 
 app = FastAPI()
 
@@ -21,10 +22,16 @@ app.add_middleware(
 
 @app.post("/predict", response_model=CompleteDegreePathway)
 async def predict_degree_pathway(
-    query: str = Body(...),
+    query: str = Form(...),
+    files: list[UploadFile] | None = File(default=None),
     predictor: DegreePathwayPredictor = Depends(get_degree_pathway_predictor),
+    file_parser: FileParser = Depends(get_file_parser),
 ) -> CompleteDegreePathway:
-    return await predictor.predict(query)
+    parsed_text = await file_parser(files)
+    combined_query = query
+    if parsed_text:
+        combined_query = f"{query.strip()}\n\n{parsed_text}"
+    return await predictor.predict(combined_query.strip())
 
 
 @app.post("/predict/{pathway_id}", response_model=CompleteDegreePathway)

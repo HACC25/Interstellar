@@ -37,8 +37,8 @@ class PathwayVectorDb:
     def text_search(self, query: str, limit: int = 8) -> list[DegreePathway]:
         """Run a simple SQL LIKE query against the serialized pathway text."""
         table = self.db.open_table("pathways")
-        escaped = self._escape_like(query)
-        where_clause = f"text LIKE '%{escaped}%'"
+        escaped = self._escape_like(query.lower())
+        where_clause = f"lower(text) LIKE '%{escaped}%'"
         results = (
             table.search()
             .where(where_clause)

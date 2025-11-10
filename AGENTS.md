@@ -1,3 +1,6 @@
+do not run tests
+to install a python package, run "uv add <package-name>"
+
 # shadcn instructions
 
 Use the latest version of Shadcn to install new components, like this command to add a button component:
