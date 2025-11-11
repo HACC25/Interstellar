@@ -3,3 +3,4 @@
 .env
 data
 /temp_lancedb/
+__pycache__
