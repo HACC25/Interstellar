@@ -5,9 +5,6 @@ services:
       dockerfile: Dockerfile
     env_file:
       - ./backend/.env
-    environment:
-      LANCEDB_STORAGE_PATH: ${LANCEDB_STORAGE_PATH}
-      COURSE_QUERY_CACHE_PATH: /app/backend/data/queries.json
     volumes:
       - ${LANCEDB_STORAGE_PATH}:/data/lancedb
     ports:
