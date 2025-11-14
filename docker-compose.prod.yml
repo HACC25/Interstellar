@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    environment:
+      LANCEDB_STORAGE_PATH: /data/lancedb
+    volumes:
+      - ~/interstellar/lancedb:/data/lancedb
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    restart: unless-stopped

@@ -1,0 +1,7 @@
+.venv
+__pycache__
+*.pyc
+.python-version
+.env
+*.DS_Store
+temp_lancedb
