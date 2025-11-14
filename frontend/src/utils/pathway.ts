@@ -16,8 +16,9 @@ export type Theme = "light" | "dark";
 export const THEME_STORAGE_KEY = "degree-pathway:theme";
 
 export const PENDING_MESSAGES = [
-  "Analyzing your preferences",
-  "Creating college plan",
+  "Searching through course catalogs...",
+  "Finding personalized courses...",
+  "Creating your 4-year plan...",
 ] as const;
 
 const OVERRIDES_STORAGE_PREFIX = "degree-pathway:course-overrides:";

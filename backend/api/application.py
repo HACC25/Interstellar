@@ -102,7 +102,7 @@ class DegreePathwayPredictor:
             }
             for c in pathways
         ]
-        summary = await agent.run(f"COURSES: {'\n'.join(all_courses_no_candidates)}\n\n\n\n explain in 8 sentences how these courses resonate well with this query. QUERY: '{query}' Your tone should be like you are speaking to the person who wrote the query. do not use em dashes. Do not start with a greeting. Just go to the summary straight away.")
+        summary = await agent.run(f"COURSES: {'\n'.join(all_courses_no_candidates)}\n\n\n\n explain in 8 sentences how these courses resonate well with this query. QUERY: '{query}' Your tone should be like you are speaking to the person who wrote the query (you speak as if you are the college counselor). do not use em dashes. Do not start with a greeting. Just go to the summary straight away.")
         base["summary"] = str(summary.output)
         # base["summary"] = "hello"
 

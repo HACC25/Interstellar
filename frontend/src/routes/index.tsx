@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
   type ChangeEvent,
-  type CSSProperties,
   type FormEvent,
   useCallback,
   useEffect,
@@ -454,25 +453,17 @@ function AppV2() {
     setTheme((previous) => (previous === "dark" ? "light" : "dark"));
   };
 
-  const backgroundLayers = useMemo<Record<Theme, CSSProperties>>(
+  const backgroundLayers = useMemo<
+    Record<Theme, { image: string; fallbackColor: string }>
+  >(
     () => ({
       dark: {
-        backgroundImage: "url(/hawaii-night.jpeg)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
-        filter: "blur(10px)",
-        transform: "scale(1.05)",
-        backgroundColor: "#020617",
+        image: "/hawaii-night.jpeg",
+        fallbackColor: "#020617",
       },
       light: {
-        backgroundImage: "url(/hawaii.jpeg)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
-        filter: "blur(10px)",
-        transform: "scale(1.05)",
-        backgroundColor: "#f8fafc",
+        image: "/hawaii.jpeg",
+        fallbackColor: "#f8fafc",
       },
     }),
     []
@@ -491,21 +482,39 @@ function AppV2() {
         className="pointer-events-none absolute inset-0 -z-10"
       >
         <div
-          className={`absolute inset-0 transition-opacity duration-[2000ms] ease-in-out ${
+          className={`absolute inset-0 overflow-hidden transition-opacity duration-[2000ms] ease-in-out ${
             theme === "dark" ? "opacity-100" : "opacity-0"
           }`}
-          style={backgroundLayers.dark}
-        />
+          style={{ backgroundColor: backgroundLayers.dark.fallbackColor }}
+        >
+          <img
+            src={backgroundLayers.dark.image}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full scale-102 object-cover blur-sm brightness-110 transform-gpu"
+          />
+        </div>
         <div
-          className={`absolute inset-0 transition-opacity duration-[2000ms] ease-in-out ${
+          className={`absolute inset-0 overflow-hidden transition-opacity duration-[2000ms] ease-in-out ${
             theme === "light" ? "opacity-100" : "opacity-0"
           }`}
-          style={backgroundLayers.light}
-        />
+          style={{ backgroundColor: backgroundLayers.light.fallbackColor }}
+        >
+          <img
+            src={backgroundLayers.light.image}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full scale-102 object-cover blur-sm brightness-[1.05] transform-gpu"
+          />
+        </div>
       </div>
       {isPredicting && (
         <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/70 backdrop-blur">
-          <div className="flex flex-col items-center gap-6 rounded-3xl border border-slate-800 bg-slate-950/80 px-12 py-10 shadow-2xl">
+          <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-3xl border border-slate-800 bg-slate-950/80 px-8 py-10 shadow-2xl min-h-[18rem]">
             <Loader2 className="h-16 w-16 animate-spin text-sky-400" />
             <div className="space-y-2 text-center">
               <p className="text-base font-semibold uppercase tracking-[0.3em] text-slate-400">

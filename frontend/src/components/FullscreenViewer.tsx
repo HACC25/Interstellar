@@ -44,6 +44,7 @@ export function FullscreenViewer({
                                   }: FullscreenViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const pendingScrollIndex = useRef<number | null>(null);
 
   const pages = useMemo<ViewerPage[]>(() => {
     const overviewPage: ViewerPage = {
@@ -71,6 +72,7 @@ export function FullscreenViewer({
     (index: number, behavior: ScrollBehavior = "smooth") => {
       const clamped = Math.max(0, Math.min(index, pages.length - 1));
       setActiveIndex(clamped);
+      pendingScrollIndex.current = behavior === "smooth" ? clamped : null;
 
       const container = containerRef.current;
       if (!container) {
@@ -98,6 +100,15 @@ export function FullscreenViewer({
 
     const { scrollLeft, clientWidth } = container;
     if (clientWidth === 0) {
+      return;
+    }
+
+    if (pendingScrollIndex.current !== null) {
+      const target = pendingScrollIndex.current;
+      const targetOffset = clientWidth * target;
+      if (Math.abs(scrollLeft - targetOffset) <= 1) {
+        pendingScrollIndex.current = null;
+      }
       return;
     }
 
