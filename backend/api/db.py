@@ -1,6 +1,8 @@
+import asyncio
 import lancedb
 from lancedb.embeddings import get_registry, EmbeddingFunction
-from lancedb import DBConnection
+from lancedb import DBConnection, AsyncConnection
+from lancedb.table import AsyncTable
 from typing import Optional
 
 from backend.api.models import UHCourse, PathwayCourse, CourseQuery, CourseQueryBase
@@ -76,12 +78,16 @@ class CourseVectorDb:
     def __init__(self, db: DBConnection, func: EmbeddingFunction):
         self.db = db
         self.func = func
+        self._async_db: Optional[AsyncConnection] = None
+        self._async_table: Optional[AsyncTable] = None
+        self._async_table_lock: Optional[asyncio.Lock] = None
+        self._db_uri = db.uri
 
         if "courses" not in self.db.table_names():
             self.db.create_table("courses", schema=UHCourseLance)
             print("Created Course Vector DB")
 
-    def query(self, text: str, query: CourseQueryBase, pathway_course: PathwayCourse, k: int = 10, n: int = 1):
+    async def query(self, text: str, query: CourseQueryBase, pathway_course: PathwayCourse, k: int = 10, n: int = 1):
         # return self.get_similar_courses(query=CourseQuery(course_number_gte=100, k=k, n=n))
 
         # agent = get_query_builder_agent()
@@ -101,16 +107,29 @@ class CourseVectorDb:
         # print(query)
         # print(query.model_dump_json(indent=2))
 
-        return self.get_similar_courses(query=query)
+        return await self.get_similar_courses(query=query)
 
-    def get_similar_courses(self, query: CourseQuery) -> list[UHCourse]:
-        table = self.db.open_table("courses")
-        q = None
+    async def _get_async_table(self) -> AsyncTable:
+        if self._async_table is not None:
+            return self._async_table
+
+        if self._async_table_lock is None:
+            self._async_table_lock = asyncio.Lock()
+
+        async with self._async_table_lock:
+            if self._async_table is None:
+                if self._async_db is None:
+                    self._async_db = await lancedb.connect_async(self._db_uri)
+                self._async_table = await self._async_db.open_table("courses")
+        return self._async_table
+
+    async def get_similar_courses(self, query: CourseQuery) -> list[UHCourse]:
+        table = await self._get_async_table()
 
         if query.query:
-            q = table.search(query.query, query_type="vector")
+            q = await table.search(query.query, query_type="vector")
         else:
-            q = table.search()
+            q = await table.search()
 
         wheres: list[str] = []
         if query.credits:
@@ -127,10 +146,17 @@ class CourseVectorDb:
             lits = ", ".join(f"'{s}'" for s in query.designations)
             wheres.append(f"array_has_any(designations, [{lits}])")
         where_clause = " AND ".join(wheres)
-        q = q.where(where_clause)
+        if where_clause:
+            q = q.where(where_clause)
 
         k = query.k or 10
-        results = q.limit(k).to_pydantic(UHCourseLance)
+        q = q.limit(k)
+        rows = await q.to_list()
+        field_names = set(UHCourseLance.field_names())
+        results = [
+            UHCourseLance(**{k: v for k, v in row.items() if k in field_names})
+            for row in rows
+        ]
 
         return [UHCourse.model_validate_json(r.model_dump_json(), extra="ignore") for r in results]
 

@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from backend.api.db import get_course_db, get_pathway_db
@@ -38,16 +39,24 @@ class DegreePathwayPredictor:
         completed_years: list[dict] = []
 
         course_names: list[str] = []
+        flattened_courses: list[PathwayCourse] = []
         for y in pathway.years:
             for s in y.semesters:
                 for c in s.courses:
                     course_names.append(c.name)
+                    flattened_courses.append(c)
 
         course_queries = await self._query_builder.build_queries(course_names)
 
         if len(course_names) != len(course_queries):
             print(f"WARNING: queries do not match courses length, courses {len(course_names)}, queries {len(course_queries)}")
 
+
+        query_coros = [
+            self._course_db.query(text=query, query=course_query, pathway_course=pathway_course)
+            for course_query, pathway_course in zip(course_queries, flattened_courses)
+        ]
+        course_query_results = await asyncio.gather(*query_coros) if query_coros else []
 
         all_courses_no_candidates = []
         i = 0
@@ -58,7 +67,7 @@ class DegreePathwayPredictor:
                 completed_courses: list[dict] = []
 
                 for c in sem.courses:
-                    courses = self._course_db.query(text=query, query=course_queries[i], pathway_course=c)
+                    courses = course_query_results[i] if i < len(course_query_results) else []
                     i += 1
 
                     if courses:
@@ -95,6 +104,7 @@ class DegreePathwayPredictor:
         ]
         summary = await agent.run(f"COURSES: {'\n'.join(all_courses_no_candidates)}\n\n\n\n explain in 8 sentences how these courses resonate well with this query. QUERY: '{query}' Your tone should be like you are speaking to the person who wrote the query. do not use em dashes. Do not start with a greeting. Just go to the summary straight away.")
         base["summary"] = str(summary.output)
+        # base["summary"] = "hello"
 
 
         # Re-validate as CompleteDegreePathway (this will build all nested models)
