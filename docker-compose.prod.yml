@@ -6,10 +6,10 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      LANCEDB_STORAGE_PATH: /data/lancedb
+      LANCEDB_STORAGE_PATH: ${LANCEDB_STORAGE_PATH}
       COURSE_QUERY_CACHE_PATH: /app/backend/data/queries.json
     volumes:
-      - ~/interstellar/lancedb:/data/lancedb
+      - ${LANCEDB_STORAGE_PATH}:/data/lancedb
     ports:
       - "8000:8000"
     restart: unless-stopped
