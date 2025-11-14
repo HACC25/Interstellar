@@ -8,5 +8,6 @@ class Settings(BaseSettings):
     openai_api_key: str
     openai_llm: str
     lancedb_storage_path: str
+    course_query_cache_path: Path = parent_folder / "data/queries.json"
 
 settings = Settings()

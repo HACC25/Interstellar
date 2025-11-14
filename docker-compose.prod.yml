@@ -7,6 +7,7 @@ services:
       - ./backend/.env
     environment:
       LANCEDB_STORAGE_PATH: /data/lancedb
+      COURSE_QUERY_CACHE_PATH: /app/backend/data/queries.json
     volumes:
       - ~/interstellar/lancedb:/data/lancedb
     ports:
@@ -18,7 +19,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: http://backend:8000
+        VITE_API_BASE_URL: /api
     depends_on:
       - backend
     ports:

@@ -1,5 +1,5 @@
 import json
-import os
+from pathlib import Path
 from typing import runtime_checkable, Protocol, Dict
 
 from pydantic_ai import Agent
@@ -83,18 +83,18 @@ class CachedQueryBuilder(QueryBuilderProtocol):
     If any requested course name is not present in the cache, raises ValueError.
     """
 
-    def __init__(self, cache_path: str = "backend/data/queries.json", *, preload: bool = True):
-        self.cache_path = cache_path
+    def __init__(self, cache_path: str | Path = settings.course_query_cache_path, *, preload: bool = True):
+        self.cache_path = Path(cache_path)
         self._map: Dict[str, CourseQueryBase] = {}
         if preload:
             self._load_cache()
 
     def _load_cache(self) -> None:
         print("loading query cache")
-        if not os.path.exists(self.cache_path):
+        if not self.cache_path.exists():
             raise FileNotFoundError(f"Cache file not found: {self.cache_path}")
 
-        with open(self.cache_path, "r", encoding="utf-8") as f:
+        with self.cache_path.open("r", encoding="utf-8") as f:
             raw = json.load(f)
 
         try:
@@ -121,4 +121,4 @@ def get_query_builder_agent():
     return query_builder_agent
 
 def get_query_builder():
-    return CachedQueryBuilder()
+    return CachedQueryBuilder(cache_path=settings.course_query_cache_path)
