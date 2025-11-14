@@ -176,8 +176,8 @@ export function FullscreenViewer({
               Close
             </button>
           </div>
-          <div className="border-t border-slate-800 bg-slate-950/80 px-6">
-            <div className="flex gap-2 overflow-x-auto py-3">
+          <div className="border-t border-slate-800 bg-slate-950/80 px-4 sm:px-6">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide py-3">
               {pages.map((page, index) => (
                 <button
                   key={page.key}
@@ -201,7 +201,7 @@ export function FullscreenViewer({
             <button
               type="button"
               onClick={() => scrollToIndex(activeIndex - 1)}
-              className="absolute left-6 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-700 bg-slate-900/80 p-3 text-slate-200 transition hover:border-sky-500 hover:text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-slate-950"
+              className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-700 bg-slate-900/80 p-2 text-slate-200 transition hover:border-sky-500 hover:text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-slate-950 sm:left-6 sm:p-3"
             >
               <ChevronLeft className="h-5 w-5" aria-hidden="true" />
               <span className="sr-only">Previous page</span>
@@ -212,7 +212,7 @@ export function FullscreenViewer({
             <button
               type="button"
               onClick={() => scrollToIndex(activeIndex + 1)}
-              className="absolute right-6 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-700 bg-slate-900/80 p-3 text-slate-200 transition hover:border-sky-500 hover:text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-slate-950"
+              className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full border border-slate-700 bg-slate-900/80 p-2 text-slate-200 transition hover:border-sky-500 hover:text-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-slate-950 sm:right-6 sm:p-3"
             >
               <ChevronRight className="h-5 w-5" aria-hidden="true" />
               <span className="sr-only">Next page</span>
@@ -221,16 +221,16 @@ export function FullscreenViewer({
 
           <div
             ref={containerRef}
-            className="h-full min-h-0 w-full overflow-x-auto overflow-y-hidden scroll-smooth"
+            className="h-full min-h-0 w-full overflow-x-auto overflow-y-hidden scroll-smooth scrollbar-hide"
             style={{ scrollSnapType: "x mandatory" }}
           >
-            <div className="flex h-full">
+            <div className="flex h-full w-full min-w-full">
               {pages.map((page) => {
                 if (page.type === "overview") {
                   return (
                     <div
                       key={page.key}
-                      className="flex h-full min-h-0 w-full min-w-full flex-col gap-6 overflow-y-auto p-10"
+                      className="flex h-full min-h-0 w-full min-w-full flex-col gap-4 overflow-y-auto p-6 scrollbar-hide sm:gap-6 sm:p-8 lg:p-10"
                       style={{ scrollSnapAlign: "start" }}
                     >
                       <div className="space-y-3">
@@ -241,7 +241,7 @@ export function FullscreenViewer({
                           {plan.institution} &middot; {plan.total_credits} credits
                         </p>
                       </div>
-                      <div className="space-y-3 rounded-3xl border border-slate-800 bg-slate-950/60 p-6">
+                      <div className="space-y-3 rounded-3xl border border-slate-800 bg-slate-950/60 p-4 sm:p-6">
                         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
                           Summary
                         </p>
@@ -250,7 +250,7 @@ export function FullscreenViewer({
                         </p>
                       </div>
                       {!!plan.candidates?.length && (
-                        <div className="space-y-3 rounded-3xl border border-slate-800 bg-slate-950/60 p-6">
+                        <div className="space-y-3 rounded-3xl border border-slate-800 bg-slate-950/60 p-4 sm:p-6">
                           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
                             Similar Pathways
                           </p>
@@ -280,7 +280,7 @@ export function FullscreenViewer({
                 return (
                   <div
                     key={page.key}
-                    className="flex h-full min-h-0 w-full min-w-full flex-col gap-6 overflow-y-auto p-10"
+                    className="flex h-full min-h-0 w-full min-w-full flex-col gap-4 overflow-y-auto p-6 scrollbar-hide sm:gap-6 sm:p-8 lg:p-10"
                     style={{ scrollSnapAlign: "start" }}
                   >
                     <div className="space-y-1">
@@ -319,7 +319,7 @@ export function FullscreenViewer({
                         })}
                       </div>
                     ) : (
-                      <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-950/60 p-8 text-center text-slate-400">
+                      <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-950/60 p-6 text-center text-slate-400">
                         No courses for {formatSemesterName(semester.semester_name)}.
                       </div>
                     )}
