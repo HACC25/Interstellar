@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -70,6 +71,7 @@ function AppV2() {
   const [theme, setTheme] = useState<Theme>("dark");
   const [hasUserThemeOverride, setHasUserThemeOverride] = useState(false);
   const [isHeroVisible, setIsHeroVisible] = useState(false);
+  const descriptionRef = useRef<HTMLParagraphElement | null>(null);
 
   const prediction = usePredictDegreePathway();
   const predictionById = usePredictDegreePathwayById();
@@ -87,6 +89,10 @@ function AppV2() {
   const pathwayResults = pathwayQuery ? (activeSearch.data ?? []) : [];
   const isSearchingPathways = activeSearch.isFetching;
   const searchError = (activeSearch.error as Error | null) ?? null;
+  const searchModeDescription =
+    searchMode === "text"
+      ? "Match UH pathway titles with the exact keywords you provide."
+      : "Discover related pathways with semantic matching.";
   const planIdentifier = useMemo(
     () => (planToShow ? getPlanIdentifier(planToShow) : null),
     [planToShow]
@@ -169,6 +175,21 @@ function AppV2() {
       console.error("Failed to restore saved pathway plan", error);
     }
   }, []);
+
+  useEffect(() => {
+    const element = descriptionRef.current;
+    if (!element || typeof element.animate !== "function") {
+      return;
+    }
+
+    element.animate(
+      [
+        { opacity: 0, transform: "translateY(4px)" },
+        { opacity: 1, transform: "translateY(0)" },
+      ],
+      { duration: 250, easing: "ease-out" }
+    );
+  }, [searchMode]);
 
   useEffect(() => {
     const latestPlan = predictionById.data ?? prediction.data;
@@ -636,7 +657,7 @@ function AppV2() {
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                   Choose a template (optional)
                 </p>
-                <h2 className="text-xl font-semibold text-slate-50">
+                <h2 className="text-xl font-semibold text-sky-400">
                   Search university pathways
                 </h2>
                 <p className="text-sm text-slate-400">
@@ -645,31 +666,39 @@ function AppV2() {
                 </p>
               </header>
 
-              <div className="flex flex-wrap gap-3 text-sm">
-                <button
-                  type="button"
-                  onClick={() => setSearchMode("text")}
-                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-slate-950 ${
-                    searchMode === "text"
-                      ? "border-sky-500 bg-sky-500/10 text-sky-200"
-                      : "border-slate-700 text-slate-400"
-                  }`}
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-3 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setSearchMode("text")}
+                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-slate-950 ${
+                      searchMode === "text"
+                        ? "border-sky-500 bg-sky-500/10 text-sky-200"
+                        : "border-slate-700 text-slate-400"
+                    }`}
+                  >
+                    <Search className="h-4 w-4" aria-hidden="true" />
+                    Quick text search
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSearchMode("similar")}
+                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-slate-950 ${
+                      searchMode === "similar"
+                        ? "border-sky-500 bg-sky-500/10 text-sky-200"
+                        : "border-slate-700 text-slate-400"
+                    }`}
+                  >
+                    <Wand2 className="h-4 w-4" aria-hidden="true" />
+                    Comprehensive search
+                  </button>
+                </div>
+                <p
+                  ref={descriptionRef}
+                  className="text-xs text-slate-500"
                 >
-                  <Search className="h-4 w-4" aria-hidden="true" />
-                  Quick text search
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSearchMode("similar")}
-                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-slate-950 ${
-                    searchMode === "similar"
-                      ? "border-sky-500 bg-sky-500/10 text-sky-200"
-                      : "border-slate-700 text-slate-400"
-                  }`}
-                >
-                  <Wand2 className="h-4 w-4" aria-hidden="true" />
-                  Comprehensive search
-                </button>
+                  {searchModeDescription}
+                </p>
               </div>
 
               <form
@@ -706,7 +735,7 @@ function AppV2() {
                     <p className="text-xs uppercase tracking-[0.3em] text-slate-300">
                       Selected
                     </p>
-                    <p className="text-base font-semibold">
+                    <p className="text-base font-semibold text-sky-400">
                       {selectedPathway.program_name}
                     </p>
                     <p className="text-sm text-slate-300">
@@ -765,12 +794,7 @@ function AppV2() {
                     </p>
                   )}
                 </div>
-              ) : (
-                <p className="text-sm text-slate-500">
-                  Enter a keyword to browse matching pathways. Text search is
-                  instant; comprehensive search digs deeper but may take longer.
-                </p>
-              )}
+              ) : null}
             </section>
 
             <section className="space-y-3 rounded-3xl border border-slate-800/70 bg-slate-950/60 p-6 shadow-inner">
@@ -778,7 +802,7 @@ function AppV2() {
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                   Describe your goals
                 </p>
-                <h2 className="text-xl font-semibold text-slate-50">
+                <h2 className="text-xl font-semibold text-sky-400">
                   Launch a personalized plan
                 </h2>
                 <p className="text-sm text-slate-400">
@@ -900,7 +924,7 @@ function AppV2() {
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
                     Here is the best pathway for you
                   </p>
-                  <h2 className="text-3xl font-semibold text-slate-50">
+                  <h2 className="text-3xl font-semibold text-sky-400">
                     {planToShow.program_name}
                   </h2>
                   <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
