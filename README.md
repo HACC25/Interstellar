@@ -2,6 +2,7 @@
 As UH Mānoa alumni, we understand the challenge of mapping out your future in higher education. The University of Hawaiʻi System offers thousands of courses, leaving many students overwhelmed and unsure which path to pursue.
 AlaAI is designed to recommend the right classes using your interests and completed courses. We focused on a user-friendly experience and optimized the AI for quick, reliable responses.
 
+[Deployment](https://interstellar.micahtilton.com/)
 # What Our Solution Does
 AlaAI is an AI degree-pathway assistant for UH Mānoa that lets a student describe their goals (and optionally upload transcripts/resumes) and receive a four-year plan with counselor-style guidance, alternative pathways, and a printable PDF in seconds. 
 - Describe goals and constraints (major interests, transfer credits, work schedule)
